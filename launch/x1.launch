@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<launch>
+  <arg name="robot_name" default="X1" />
+
+  <!-- Spawn your team here. -->
+  <arg name="laser_enabled" default="true"/>
+  <arg name="kinect_enabled" default="false"/>
+
+  <include file="$(find x1_gazebo)/launch/spawn_x1.launch">
+    <arg name="laser_enabled" value="$(arg laser_enabled)"/>
+    <arg name="kinect_enabled" value="$(arg kinect_enabled)"/>
+    <arg name="robot_namespace" value="$(arg robot_name)"/>
+  </include>
+
+  <node name="$(arg robot_name)_control" pkg="subt_seed" type="subt_seed_node" args="$(arg robot_name) 128.0.0.11" />
+
+</launch>
