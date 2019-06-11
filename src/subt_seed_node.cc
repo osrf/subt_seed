@@ -20,7 +20,7 @@
 
 #include <string>
 
-#include <subt_communication_broker/subt_communication_client.h>
+#include <subt_communication_broker_ign/subt_communication_client.h>
 
 /// \brief. Example control class, running as a ROS node to control a robot.
 class Controller
@@ -52,14 +52,14 @@ class Controller
   private: ros::Publisher velPub;
 
   /// \brief Communication client.
-  private: std::unique_ptr<subt::CommsClient> client;
+  private: std::unique_ptr<subt::CommsClientIgn> client;
 };
 
 /////////////////////////////////////////////////
 Controller::Controller(const std::string &_name)
 {
   // Create subt communication client
-  this->client.reset(new subt::CommsClient(_name));
+  this->client.reset(new subt::CommsClientIgn(_name));
   this->client->Bind(&Controller::CommClientCallback, this);
 
   // Create a cmd_vel publisher to control a vehicle.
