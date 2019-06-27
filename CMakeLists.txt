@@ -14,11 +14,11 @@ set (SUBT_VERSION_FULL
 find_package(catkin REQUIRED
   COMPONENTS
     message_generation
-    subt_gazebo
+    subt_ign
     roscpp
 )
 
-find_package(gazebo REQUIRED)
+### find_package(gazebo REQUIRED)
 
 catkin_package(
   CATKIN_DEPENDS message_runtime
