@@ -3,7 +3,7 @@
   <version>0.1.0</version>
   <description>A reference participant for the DARPA SubT challenge.</description>
   <license>Apache 2.0</license>
-  <maintainer email="caguero@openrobotics.org">Carlos Ag�ero</maintainer>
+  <maintainer email="caguero@openrobotics.org">Carlos Aguero</maintainer>
 
   <buildtool_depend>catkin</buildtool_depend>
 
