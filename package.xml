@@ -8,17 +8,9 @@
   <buildtool_depend>catkin</buildtool_depend>
 
   <depend>roscpp</depend>
-  <depend>gazebo_ros</depend>
-  <depend>rotors_description</depend>
-  <depend>rotors_gazebo</depend>
-  <depend>rotors_gazebo_plugins</depend>
-  <depend>subt_gazebo</depend>
+  <depend>subt_communication_broker</depend>
+  <depend>subt_msgs</depend>
 
   <build_depend>message_generation</build_depend>
   <exec_depend>message_runtime</exec_depend>
-
-  <export>
-    <!-- path to models -->
-    <gazebo_ros gazebo_model_path="${prefix}/models"/>
-  </export>
 </package>
