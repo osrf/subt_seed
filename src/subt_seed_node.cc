@@ -16,6 +16,7 @@
 */
 
 #include <geometry_msgs/Twist.h>
+#include <subt_msgs/PoseFromArtifact.h>
 #include <ros/ros.h>
 
 #include <string>
@@ -53,6 +54,12 @@ class Controller
 
   /// \brief Communication client.
   private: std::unique_ptr<subt::CommsClient> client;
+
+  /// \brief Client to request pose from origin.
+  private: ros::ServiceClient originClient;
+
+  /// \brief Service to request pose from origin.
+  private: subt_msgs::PoseFromArtifact originSrv;
 };
 
 /////////////////////////////////////////////////
@@ -64,6 +71,11 @@ Controller::Controller(const std::string &_name)
 
   // Create a cmd_vel publisher to control a vehicle.
   this->velPub = this->n.advertise<geometry_msgs::Twist>(_name + "/cmd_vel", 1);
+
+  // Create a cmd_vel publisher to control a vehicle.
+  this->originClient = this->n.serviceClient<subt_msgs::PoseFromArtifact>(
+      "/subt/pose_from_artifact_origin");
+  this->originSrv.request.robot_name.data = _name;
 }
 
 /////////////////////////////////////////////////
@@ -81,9 +93,90 @@ void Controller::Update()
 {
   // Add code that should be processed every iteration.
 
-  // The following code will continuous drive the robot forward.
+  // Query current robot position w.r.t. entrance
+  if (!this->originClient.call(this->originSrv) ||
+      !this->originSrv.response.success)
+  {
+    ROS_ERROR_ONCE("Failed to call pose_from_artifact_origin service, \
+robot may not exist, or be outside staging area.");
+
+    // Stop robot
+    geometry_msgs::Twist msg;
+    this->velPub.publish(msg);
+    return;
+  }
+
+  auto pose = this->originSrv.response.pose.pose;
+
+  // Simple example for robot to go to entrance
   geometry_msgs::Twist msg;
-  msg.linear.x = 1.0;
+
+  // Distance to goal
+  double dist = pose.position.x * pose.position.x + pose.position.y * pose.position.y;
+
+  // Arrived
+  if (dist < 0.3 || pose.position.x >= 0)
+  {
+    msg.linear.x = 0;
+    msg.angular.z = 0;
+  }
+  // Move towards entrance
+  else
+  {
+    // Yaw w.r.t. entrance
+    // Quaternion to yaw:
+    // https://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles#Source_Code_2
+    auto q = pose.orientation;
+    double siny_cosp = +2.0 * (q.w * q.z + q.x * q.y);
+    double cosy_cosp = +1.0 - 2.0 * (q.y * q.y + q.z * q.z);
+    auto yaw = atan2(siny_cosp, cosy_cosp);
+
+    auto facingFront = abs(yaw) < 0.1;
+    auto facingEast = abs(yaw + M_PI * 0.5) < 0.1;
+    auto facingWest = abs(yaw - M_PI * 0.5) < 0.1;
+
+    auto onCenter = abs(pose.position.y) <= 1.0;
+    auto westOfCenter = pose.position.y > 1.0;
+    auto eastOfCenter = pose.position.y < -1.0;
+
+    double linVel = 3.0;
+    double angVel = 1.5;
+
+    // Robot is facing entrance
+    if (facingFront && onCenter)
+    {
+      msg.linear.x = linVel;
+      msg.angular.z = angVel * 2 * yaw;
+    }
+    // Turn to center line
+    else if (!facingEast && westOfCenter)
+    {
+      msg.angular.z = -angVel;
+    }
+    else if (!facingWest && eastOfCenter)
+    {
+      msg.angular.z = angVel;
+    }
+    // Go to center line
+    else if (facingEast && westOfCenter)
+    {
+      msg.linear.x = linVel;
+    }
+    else if (facingWest && eastOfCenter)
+    {
+      msg.linear.x = linVel;
+    }
+    // Center line, not facing entrance
+    else if (onCenter && !facingFront)
+    {
+      msg.angular.z = angVel * -yaw;
+    }
+    else
+    {
+      ROS_ERROR("Unhandled case");
+    }
+  }
+
   this->velPub.publish(msg);
 }
 
