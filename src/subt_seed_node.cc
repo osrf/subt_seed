@@ -55,7 +55,10 @@ class Controller
   /// \brief Communication client.
   private: std::unique_ptr<subt::CommsClient> client;
 
+  /// \brief Client to request pose from origin.
   private: ros::ServiceClient originClient;
+
+  /// \brief Service to request pose from origin.
   private: subt_msgs::PoseFromArtifact originSrv;
 };
 
