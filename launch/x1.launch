@@ -9,7 +9,7 @@
   -->
 
   <!-- Launch your controller nodes -->
-  <node name="$(arg robot_1_name)_control" pkg="subt_seed" type="subt_seed_node" args="$(arg robot_1_name)" />
+  <node name="$(arg robot_1_name)_control" pkg="subt_seed" type="subt_seed_node" args="$(arg robot_1_name)" output="screen"/>
 
   <!-- Other potential controllers -->
   <!--
