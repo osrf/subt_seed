@@ -60,6 +60,9 @@ class Controller
 
   /// \brief Service to request pose from origin.
   private: subt_msgs::PoseFromArtifact originSrv;
+
+  /// \brief True if robot has arrived at destination.
+  private: bool arrived{false};
 };
 
 /////////////////////////////////////////////////
@@ -93,6 +96,9 @@ void Controller::Update()
 {
   // Add code that should be processed every iteration.
 
+  if (this->arrived)
+    return;
+
   // Query current robot position w.r.t. entrance
   if (!this->originClient.call(this->originSrv) ||
       !this->originSrv.response.success)
@@ -115,10 +121,12 @@ robot may not exist, or be outside staging area.");
   double dist = pose.position.x * pose.position.x + pose.position.y * pose.position.y;
 
   // Arrived
-  if (dist < 0.3 || pose.position.x >= 0)
+  if (dist < 0.3 || pose.position.x >= -0.3)
   {
     msg.linear.x = 0;
     msg.angular.z = 0;
+    this->arrived = true;
+    ROS_INFO("Arrived at entrance!");
   }
   // Move towards entrance
   else
@@ -146,7 +154,7 @@ robot may not exist, or be outside staging area.");
     if (facingFront && onCenter)
     {
       msg.linear.x = linVel;
-      msg.angular.z = angVel * 2 * yaw;
+      msg.angular.z = angVel * -yaw;
     }
     // Turn to center line
     else if (!facingEast && westOfCenter)
