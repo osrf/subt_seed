@@ -110,7 +110,7 @@ RUN /bin/sh -c 'echo ". /opt/ros/melodic/setup.bash" >> ~/.bashrc' \
 
 # Copy entry point script, and set the entrypoint. Automatically run the team.ign script
 COPY run_solution.bash ./
-ENTRYPOINT ["./run_solution.bash", "team.ign"]
+ENTRYPOINT ["./run_solution.bash"]
 
 # Customize your image here.
 # E.g.:
