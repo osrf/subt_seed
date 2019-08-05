@@ -3,4 +3,4 @@
 . /opt/ros/melodic/setup.bash
 . ~/subt_solution/install/setup.sh
 
-ign launch -v 4 $@
+roslaunch subt_seed x1.launch robot_1_name:=X1
