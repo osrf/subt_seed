@@ -109,8 +109,8 @@ RUN /bin/sh -c 'echo ". /opt/ros/melodic/setup.bash" >> ~/.bashrc' \
  && /bin/sh -c 'echo ". ~/subt_solution/install/setup.sh" >> ~/.bashrc'
 
 # Copy entry point script, and set the entrypoint. Automatically run the team.ign script
-COPY run_sim.bash ./
-ENTRYPOINT ["./run_sim.bash", "team.ign"]
+COPY run_solution.bash ./
+ENTRYPOINT ["./run_solution.bash", "team.ign"]
 
 # Customize your image here.
 # E.g.:
