@@ -94,11 +94,11 @@ RUN sudo apt-get update \
 
 # Clone all the subt models so that you don't download them every time
 # docker is run
-RUN mkdir -p subt_ws/src \
- && cd subt_ws/src \
+RUN mkdir -p subt_solution/src \
+ && cd subt_solution/src \
  && hg clone https://bitbucket.org/osrf/subt -b tunnel_circuit
 
-WORKDIR /home/$USERNAME/subt_ws
+WORKDIR /home/$USERNAME/subt_solution
 
 # Install Rotors
 # RUN wget https://s3.amazonaws.com/osrf-distributions/subt_robot_examples/releases/subt_robot_examples_latest.tgz
