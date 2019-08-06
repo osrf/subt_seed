@@ -87,17 +87,18 @@ RUN sudo /bin/sh -c 'echo "deb [trusted=yes] http://packages.osrfoundation.org/g
 
 # install ign-blueprint
 RUN sudo apt-get update \
- && sudo apt-get install -y \
+&&  sudo apt-get install -y \
     ignition-blueprint \
- && sudo apt-get clean
-
-# install the ros to ign bridge
-RUN sudo apt-get update \
- && sudo apt-get install -y \
     ros-melodic-ros1-ign \
  && sudo apt-get clean
 
-WORKDIR /home/$USERNAME/subt_solution
+# Clone all the subt models so that you don't download them every time
+# docker is run
+RUN mkdir -p subt_ws/src \
+ && cd subt_ws/src \
+ && hg clone https://bitbucket.org/osrf/subt -b tunnel_circuit
+
+WORKDIR /home/$USERNAME/subt_ws
 
 # Install Rotors
 # RUN wget https://s3.amazonaws.com/osrf-distributions/subt_robot_examples/releases/subt_robot_examples_latest.tgz
@@ -108,7 +109,10 @@ RUN /bin/bash -c 'source /opt/ros/melodic/setup.bash && catkin_make install'
 RUN /bin/sh -c 'echo ". /opt/ros/melodic/setup.bash" >> ~/.bashrc' \
  && /bin/sh -c 'echo ". ~/subt_solution/install/setup.sh" >> ~/.bashrc'
 
-# Copy entry point script, and set the entrypoint. Automatically run the team.ign script
+# Create a directory required by cloudsim
+RUN mkdir -p /tmp/ign
+
+# Copy entry point script, and set the entrypoint
 COPY run_solution.bash ./
 ENTRYPOINT ["./run_solution.bash"]
 
