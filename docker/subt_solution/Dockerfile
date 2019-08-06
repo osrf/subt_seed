@@ -2,8 +2,8 @@
 FROM nvidia/opengl:1.0-glvnd-devel-ubuntu18.04
 
 # Tools I find useful during development
-RUN apt-get update \
- && apt-get install -y \
+RUN apt-get update -qq \
+ && apt-get install -y -qq \
         build-essential \
         cmake \
         cppcheck \
@@ -29,7 +29,7 @@ RUN apt-get update \
         wget \
         net-tools \
         iputils-ping \
- && apt-get clean
+ && apt-get clean -qq 
 
 # Add a user with the same user_id as the user outside the container
 # Requires a docker build argument `user_id`
@@ -50,17 +50,17 @@ RUN mkdir ~/workspaces ~/other
 WORKDIR /home/$USERNAME
 
 RUN export DEBIAN_FRONTEND=noninteractive \
- && sudo apt-get update \
- && sudo -E apt-get install -y \
+ && sudo apt-get update -qq \
+ && sudo -E apt-get install -y -qq \
     tzdata \
  && sudo ln -fs /usr/share/zoneinfo/America/Los_Angeles /etc/localtime \
  && sudo dpkg-reconfigure --frontend noninteractive tzdata \
- && sudo apt-get clean
+ && sudo apt-get clean -qq
 
 # install ROS and required packages
 RUN sudo /bin/sh -c 'echo "deb [trusted=yes] http://packages.ros.org/ros/ubuntu $(lsb_release -sc) main" > /etc/apt/sources.list.d/ros-latest.list' \
- && sudo apt-get update \
- && sudo apt-get install -y \
+ && sudo apt-get update -qq \
+ && sudo apt-get install -y -qq \
     python-catkin-tools \
     python-rosinstall \
     ros-melodic-desktop \
@@ -73,7 +73,7 @@ RUN sudo /bin/sh -c 'echo "deb [trusted=yes] http://packages.ros.org/ros/ubuntu 
     ros-melodic-rviz-imu-plugin \
     ros-melodic-rotors-control \
  && sudo rosdep init \
- && sudo apt-get clean
+ && sudo apt-get clean -qq
 
 RUN rosdep update
 
@@ -86,17 +86,16 @@ RUN sudo /bin/sh -c 'echo "deb [trusted=yes] http://packages.osrfoundation.org/g
  && sudo /bin/sh -c 'apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-key C1CF6E31E6BADE8868B172B4F42ED6FBAB17C654'
 
 # install ign-blueprint
-RUN sudo apt-get update \
-&&  sudo apt-get install -y \
+RUN sudo apt-get update -qq \
+&&  sudo apt-get install -y -qq \
     ignition-blueprint \
     ros-melodic-ros1-ign \
- && sudo apt-get clean
+ && sudo apt-get clean -qq
 
-# Clone all the subt models so that you don't download them every time
-# docker is run
 RUN mkdir -p subt_solution/src \
  && cd subt_solution/src \
  && hg clone https://bitbucket.org/osrf/subt -b tunnel_circuit
+ && hg clone https://bitbucket.org/osrf/subt_seed
 
 WORKDIR /home/$USERNAME/subt_solution
 
