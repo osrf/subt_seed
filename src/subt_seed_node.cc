@@ -109,6 +109,10 @@ robot may not exist, or be outside staging area.");
     // Stop robot
     geometry_msgs::Twist msg;
     this->velPub.publish(msg);
+
+    // If out of range once, we consider it arrived
+    this->arrived = true;
+
     return;
   }
 
