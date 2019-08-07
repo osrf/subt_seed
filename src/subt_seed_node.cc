@@ -89,6 +89,15 @@ Controller::Controller(const std::string &_name)
   {
     ROS_ERROR("Unable to send start signal.");
   }
+
+  if (!res.success)
+  {
+    ROS_ERROR("Failed to send start signal [%s]", res.message.c_str());
+  }
+  else
+  {
+    ROS_INFO("Sent start signal.");
+  }
 }
 
 /////////////////////////////////////////////////
