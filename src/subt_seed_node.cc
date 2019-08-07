@@ -23,6 +23,8 @@
 #include <string>
 
 #include <subt_communication_broker/subt_communication_client.h>
+#include <subt_ign/CommonTypes.hh>
+#include <subt_ign/protobuf/artifact.pb.h>
 
 /// \brief. Example control class, running as a ROS node to control a robot.
 class Controller
@@ -101,13 +103,20 @@ Controller::Controller(const std::string &_name)
 }
 
 /////////////////////////////////////////////////
-void Controller::CommClientCallback(const std::string &/*_srcAddress*/,
-                                    const std::string &/*_dstAddress*/,
-                                    const uint32_t /*_dstPort*/,
-                                    const std::string &/*_data*/)
+void Controller::CommClientCallback(const std::string &_srcAddress,
+                                    const std::string &_dstAddress,
+                                    const uint32_t _dstPort,
+                                    const std::string &_data)
 {
+  subt::msgs::ArtifactScore res;
+  if (!res.ParseFromString(_data))
+  {
+    ROS_ERROR("CommClientCallback(): Error deserializing message.");
+  }
+
   // Add code to handle communication callbacks.
-  ROS_INFO("CommClientCallback");
+  ROS_INFO("Message from [%s] to [%s] on port [%u]:\n [%s]", _srcAddress.c_str(),
+      _dstAddress.c_str(), _dstPort, res.DebugString().c_str());
 }
 
 /////////////////////////////////////////////////
@@ -150,6 +159,25 @@ robot may not exist, or be outside staging area.");
     msg.angular.z = 0;
     this->arrived = true;
     ROS_INFO("Arrived at entrance!");
+
+    // Report an artifact
+    // Hardcoded to tunnel_circuit_practice_01's exginguisher_3
+    subt::msgs::Artifact artifact;
+    artifact.set_type(static_cast<uint32_t>(subt::ArtifactType::TYPE_EXTINGUISHER));
+    artifact.mutable_pose()->mutable_position()->set_x(-8.1);
+    artifact.mutable_pose()->mutable_position()->set_y(37);
+    artifact.mutable_pose()->mutable_position()->set_z(0.004);
+
+    std::string serializedData;
+    if (!artifact.SerializeToString(&serializedData))
+    {
+      ROS_ERROR("ReportArtifact(): Error serializing message [%s]",
+          artifact.DebugString().c_str());
+    }
+    else if (!this->client->SendTo(serializedData, subt::kBaseStationName))
+    {
+      ROS_ERROR("CommsClient failed to Send serialized data.");
+    }
   }
   // Move towards entrance
   else
