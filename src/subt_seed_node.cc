@@ -18,6 +18,7 @@
 #include <geometry_msgs/Twist.h>
 #include <subt_msgs/PoseFromArtifact.h>
 #include <ros/ros.h>
+#include <std_srvs/SetBool.h>
 
 #include <string>
 
@@ -79,6 +80,15 @@ Controller::Controller(const std::string &_name)
   this->originClient = this->n.serviceClient<subt_msgs::PoseFromArtifact>(
       "/subt/pose_from_artifact_origin");
   this->originSrv.request.robot_name.data = _name;
+
+  // Send start signal
+  std_srvs::SetBool::Request req;
+  std_srvs::SetBool::Response res;
+  req.data = true;
+  if (!ros::service::call("/subt/start", req, res))
+  {
+    ROS_ERROR("Unable to send start signal.");
+  }
 }
 
 /////////////////////////////////////////////////
