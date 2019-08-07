@@ -87,7 +87,7 @@ Controller::Controller(const std::string &_name)
   req.data = true;
   if (!ros::service::call("/subt/start", req, res))
   {
-    ROS_ERROR("Unable to send start single");
+    ROS_ERROR("Unable to send start signal.");
   }
 }
 
