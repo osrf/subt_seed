@@ -74,16 +74,6 @@ class Controller
 /////////////////////////////////////////////////
 Controller::Controller(const std::string &_name)
 {
-  // Create subt communication client
-  this->client.reset(new subt::CommsClient(_name));
-  this->client->Bind(&Controller::CommClientCallback, this);
-
-  // Create a cmd_vel publisher to control a vehicle.
-  this->velPub = this->n.advertise<geometry_msgs::Twist>(_name + "/cmd_vel", 1);
-
-  // Create a cmd_vel publisher to control a vehicle.
-  this->originClient = this->n.serviceClient<subt_msgs::PoseFromArtifact>(
-      "/subt/pose_from_artifact_origin");
   this->originSrv.request.robot_name.data = _name;
 }
 
@@ -115,17 +105,30 @@ void Controller::Update()
     req.data = true;
     if (!ros::service::call("/subt/start", req, res))
     {
-      ROS_ERROR_ONCE("Unable to send start signal.");
+      ROS_ERROR("Unable to send start signal.");
     }
 
     if (!res.success)
     {
-      ROS_ERROR_ONCE("Failed to send start signal [%s]", res.message.c_str());
+      ROS_ERROR("Failed to send start signal [%s]", res.message.c_str());
     }
     else
     {
-      this->started = true;
       ROS_INFO("Sent start signal.");
+
+      // Create subt communication client
+      this->client.reset(new subt::CommsClient(_name));
+      this->client->Bind(&Controller::CommClientCallback, this);
+
+      // Create a cmd_vel publisher to control a vehicle.
+      this->velPub = this->n.advertise<geometry_msgs::Twist>(
+          _name + "/cmd_vel", 1);
+
+      // Create a cmd_vel publisher to control a vehicle.
+      this->originClient = this->n.serviceClient<subt_msgs::PoseFromArtifact>(
+          "/subt/pose_from_artifact_origin");
+
+      this->started = true;
     }
 
     // Don't continue if we have not been started.
