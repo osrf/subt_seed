@@ -127,6 +127,9 @@ void Controller::Update()
       this->started = true;
       ROS_INFO("Sent start signal.");
     }
+
+    // Don't continue if we have not been started.
+    return;
   }
 
   // Add code that should be processed every iteration.
