@@ -66,6 +66,9 @@ class Controller
 
   /// \brief True if robot has arrived at destination.
   private: bool arrived{false};
+
+  /// \brief True if we have successfully sent the start signal.
+  private: bool started{false};
 };
 
 /////////////////////////////////////////////////
@@ -82,24 +85,6 @@ Controller::Controller(const std::string &_name)
   this->originClient = this->n.serviceClient<subt_msgs::PoseFromArtifact>(
       "/subt/pose_from_artifact_origin");
   this->originSrv.request.robot_name.data = _name;
-
-  // Send start signal
-  std_srvs::SetBool::Request req;
-  std_srvs::SetBool::Response res;
-  req.data = true;
-  if (!ros::service::call("/subt/start", req, res))
-  {
-    ROS_ERROR("Unable to send start signal.");
-  }
-
-  if (!res.success)
-  {
-    ROS_ERROR("Failed to send start signal [%s]", res.message.c_str());
-  }
-  else
-  {
-    ROS_INFO("Sent start signal.");
-  }
 }
 
 /////////////////////////////////////////////////
@@ -122,6 +107,28 @@ void Controller::CommClientCallback(const std::string &_srcAddress,
 /////////////////////////////////////////////////
 void Controller::Update()
 {
+  if (!this->started)
+  {
+    // Send start signal
+    std_srvs::SetBool::Request req;
+    std_srvs::SetBool::Response res;
+    req.data = true;
+    if (!ros::service::call("/subt/start", req, res))
+    {
+      ROS_ERROR_ONCE("Unable to send start signal.");
+    }
+
+    if (!res.success)
+    {
+      ROS_ERROR_ONCE("Failed to send start signal [%s]", res.message.c_str());
+    }
+    else
+    {
+      this->started = true;
+      ROS_INFO("Sent start signal.");
+    }
+  }
+
   // Add code that should be processed every iteration.
 
   if (this->arrived)
