@@ -260,12 +260,6 @@ not available.");
     }
   }
 
-  // Make the X1 move slower.
-  if (this->name == "X1")
-    msg.linear.x *= 0.5;
-  else if (this->name == "X2")
-    msg.linear.x *= 2;
-
   this->velPub.publish(msg);
 }
 
