@@ -89,6 +89,7 @@ Controller::Controller(const std::string &_name)
   ros::service::waitForService("/subt/start", -1);
   ros::service::waitForService("/subt/pose_from_artifact_origin", -1);
   this->name = _name;
+  ROS_INFO("Using robot name[%s]\n", this->name.c_str());
 }
 
 /////////////////////////////////////////////////
@@ -316,8 +317,6 @@ int main(int argc, char** argv)
   {
     name = argv[1];
   }
-
-  ROS_INFO("Using robot name[%s]\n", name.c_str());
 
   // Create the controller
   Controller controller(name);
