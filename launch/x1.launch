@@ -1,19 +1,8 @@
 <?xml version="1.0"?>
 <launch>
   <!-- Arguments -->
-  <arg name="robot_1_name" default="X1_1" />
-
-  <!-- Other potential robot names -->
-  <!--
-  <arg name="robot_2_name" default="X1_2" />
-  -->
+  <arg name="robot_name" default="" />
 
   <!-- Launch your controller nodes -->
-  <node name="$(arg robot_1_name)_control" pkg="subt_seed" type="subt_seed_node" args="$(arg robot_1_name)" output="screen"/>
-
-  <!-- Other potential controllers -->
-  <!--
-  <node name="$(arg robot_2_name)_control" pkg="subt_seed" type="subt_seed_node" args="$(arg robot_2_name)" />
-  -->
-
+  <node name="$(arg robot_name)subt_solution" pkg="subt_seed" type="subt_seed_node" output="screen" args="$(arg robot_name)"/>
 </launch>

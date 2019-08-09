@@ -14,11 +14,12 @@
  * limitations under the License.
  *
 */
-
+#include <chrono>
 #include <geometry_msgs/Twist.h>
 #include <subt_msgs/PoseFromArtifact.h>
 #include <ros/ros.h>
 #include <std_srvs/SetBool.h>
+#include <rosgraph_msgs/Clock.h>
 
 #include <string>
 
@@ -66,40 +67,28 @@ class Controller
 
   /// \brief True if robot has arrived at destination.
   private: bool arrived{false};
+
+  /// \brief True if started.
+  private: bool started{false};
+
+  /// \brief Last time a comms message to another robot was sent.
+  private: std::chrono::time_point<std::chrono::system_clock> lastMsgSentTime;
+
+  /// \brief Name of this robot.
+  private: std::string name;
 };
 
 /////////////////////////////////////////////////
 Controller::Controller(const std::string &_name)
 {
-  // Create subt communication client
-  this->client.reset(new subt::CommsClient(_name));
-  this->client->Bind(&Controller::CommClientCallback, this);
+  ROS_INFO("Waiting for /clock, /subt/start, and /subt/pose_from_artifact");
 
-  // Create a cmd_vel publisher to control a vehicle.
-  this->velPub = this->n.advertise<geometry_msgs::Twist>(_name + "/cmd_vel", 1);
+  ros::topic::waitForMessage<rosgraph_msgs::Clock>("/clock", this->n);
 
-  // Create a cmd_vel publisher to control a vehicle.
-  this->originClient = this->n.serviceClient<subt_msgs::PoseFromArtifact>(
-      "/subt/pose_from_artifact_origin");
-  this->originSrv.request.robot_name.data = _name;
-
-  // Send start signal
-  std_srvs::SetBool::Request req;
-  std_srvs::SetBool::Response res;
-  req.data = true;
-  if (!ros::service::call("/subt/start", req, res))
-  {
-    ROS_ERROR("Unable to send start signal.");
-  }
-
-  if (!res.success)
-  {
-    ROS_ERROR("Failed to send start signal [%s]", res.message.c_str());
-  }
-  else
-  {
-    ROS_INFO("Sent start signal.");
-  }
+  // Wait for the start service to be ready.
+  ros::service::waitForService("/subt/start", -1);
+  ros::service::waitForService("/subt/pose_from_artifact_origin", -1);
+  this->name = _name;
 }
 
 /////////////////////////////////////////////////
@@ -111,7 +100,7 @@ void Controller::CommClientCallback(const std::string &_srcAddress,
   subt::msgs::ArtifactScore res;
   if (!res.ParseFromString(_data))
   {
-    ROS_ERROR("CommClientCallback(): Error deserializing message.");
+    ROS_INFO("Message Contents[%s]", _data.c_str());
   }
 
   // Add code to handle communication callbacks.
@@ -122,25 +111,75 @@ void Controller::CommClientCallback(const std::string &_srcAddress,
 /////////////////////////////////////////////////
 void Controller::Update()
 {
+  if (!this->started)
+  {
+    // Send start signal
+    std_srvs::SetBool::Request req;
+    std_srvs::SetBool::Response res;
+    req.data = true;
+    if (!ros::service::call("/subt/start", req, res))
+    {
+      ROS_ERROR("Unable to send start signal.");
+    }
+    else
+    {
+      ROS_INFO("Sent start signal.");
+      this->started = true;
+    }
+
+    if (this->started)
+    {
+      // Create subt communication client
+      this->client.reset(new subt::CommsClient(this->name));
+      this->client->Bind(&Controller::CommClientCallback, this);
+
+      // Create a cmd_vel publisher to control a vehicle.
+      this->velPub = this->n.advertise<geometry_msgs::Twist>(
+          this->name + "/cmd_vel", 1);
+
+      // Create a cmd_vel publisher to control a vehicle.
+      this->originClient = this->n.serviceClient<subt_msgs::PoseFromArtifact>(
+          "/subt/pose_from_artifact_origin");
+      this->originSrv.request.robot_name.data = this->name;
+    }
+    else
+      return;
+  }
+
   // Add code that should be processed every iteration.
+
+  std::chrono::time_point<std::chrono::system_clock> now =
+    std::chrono::system_clock::now();
+
+  if (std::chrono::duration<double>(now - this->lastMsgSentTime).count() > 5.0)
+  {
+    // Here, we are assuming that the robot names are "X1" and "X2".
+    if (this->name == "X1")
+    {
+      this->client->SendTo("Hello from " + this->name, "X2");
+    }
+    else
+    {
+      this->client->SendTo("Hello from " + this->name, "X1");
+    }
+    this->lastMsgSentTime = now;
+  }
+
 
   if (this->arrived)
     return;
 
+  bool call = this->originClient.call(this->originSrv);
   // Query current robot position w.r.t. entrance
-  if (!this->originClient.call(this->originSrv) ||
-      !this->originSrv.response.success)
+  if (!call || !this->originSrv.response.success)
   {
-    ROS_ERROR_ONCE("Failed to call pose_from_artifact_origin service, \
-robot may not exist, or be outside staging area.");
+    ROS_ERROR("Failed to call pose_from_artifact_origin service, \
+robot may not exist, be outside staging area, or the service is \
+not available.");
 
     // Stop robot
     geometry_msgs::Twist msg;
     this->velPub.publish(msg);
-
-    // If out of range once, we consider it arrived
-    this->arrived = true;
-
     return;
   }
 
@@ -150,7 +189,8 @@ robot may not exist, or be outside staging area.");
   geometry_msgs::Twist msg;
 
   // Distance to goal
-  double dist = pose.position.x * pose.position.x + pose.position.y * pose.position.y;
+  double dist = pose.position.x * pose.position.x +
+    pose.position.y * pose.position.y;
 
   // Arrived
   if (dist < 0.3 || pose.position.x >= -0.3)
@@ -242,19 +282,45 @@ robot may not exist, or be outside staging area.");
 /////////////////////////////////////////////////
 int main(int argc, char** argv)
 {
-  if (argc < 2)
-  {
-    ROS_ERROR_STREAM("Needs an argument for the competitor's name.");
-    return -1;
-  }
-
   // Initialize ros
   ros::init(argc, argv, argv[1]);
 
   ROS_INFO("Starting seed competitor\n");
+  std::string name;
+
+  // Get the name of the robot based on the name of the "cmd_vel" topic if
+  // the name was not passed in as an argument.
+  if (argc < 2 || std::strlen(argv[1]) == 0)
+  {
+    ros::master::V_TopicInfo masterTopics;
+    ros::master::getTopics(masterTopics);
+
+    while (name.empty())
+    {
+      for (ros::master::V_TopicInfo::iterator it = masterTopics.begin();
+          it != masterTopics.end(); ++it)
+      {
+        const ros::master::TopicInfo &info = *it;
+        if (info.name.find("cmd_vel") != std::string::npos)
+        {
+          int rpos = info.name.rfind("/");
+          name = info.name.substr(1, rpos - 1);
+        }
+      }
+      if (name.empty())
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
+  }
+  // Otherwise use the name provided as an argument.
+  else
+  {
+    name = argv[1];
+  }
+
+  ROS_INFO("Using robot name[%s]\n", name.c_str());
 
   // Create the controller
-  Controller controller(argv[1]);
+  Controller controller(name);
 
   // This sample code iteratively calls Controller::Update. This is just an
   // example. You can write your controller using alternative methods.
