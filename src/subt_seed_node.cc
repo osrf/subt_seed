@@ -173,16 +173,13 @@ void Controller::Update()
   // Query current robot position w.r.t. entrance
   if (!call || !this->originSrv.response.success)
   {
-    ROS_ERROR_ONCE("Failed to call pose_from_artifact_origin service, \
+    ROS_ERROR("Failed to call pose_from_artifact_origin service, \
 robot may not exist, be outside staging area, or the service is \
 not available.");
 
-    if (call)
-    {
-      // Stop robot
-      geometry_msgs::Twist msg;
-      this->velPub.publish(msg);
-    }
+    // Stop robot
+    geometry_msgs::Twist msg;
+    this->velPub.publish(msg);
     return;
   }
 
@@ -192,7 +189,8 @@ not available.");
   geometry_msgs::Twist msg;
 
   // Distance to goal
-  double dist = pose.position.x * pose.position.x + pose.position.y * pose.position.y;
+  double dist = pose.position.x * pose.position.x +
+    pose.position.y * pose.position.y;
 
   // Arrived
   if (dist < 0.3 || pose.position.x >= -0.3)
