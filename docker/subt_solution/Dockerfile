@@ -95,7 +95,7 @@ RUN sudo apt-get update -qq \
 RUN mkdir -p subt_solution/src \
  && cd subt_solution/src \
  && hg clone https://bitbucket.org/osrf/subt -b tunnel_circuit \
- && hg clone https://bitbucket.org/osrf/subt_seed -b move_start
+ && hg clone https://bitbucket.org/osrf/subt_seed
 
 WORKDIR /home/$USERNAME/subt_solution
 
