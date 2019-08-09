@@ -68,8 +68,13 @@ class Controller
   /// \brief True if robot has arrived at destination.
   private: bool arrived{false};
 
+  /// \brief True if started.
   private: bool started{false};
 
+  /// \brief Last time a comms message to another robot was sent.
+  private: std::chrono::time_point<std::chrono::system_clock> lastMsgSentTime;
+
+  /// \brief Name of this robot.
   private: std::string name;
 };
 
@@ -95,7 +100,7 @@ void Controller::CommClientCallback(const std::string &_srcAddress,
   subt::msgs::ArtifactScore res;
   if (!res.ParseFromString(_data))
   {
-    ROS_ERROR("CommClientCallback(): Error deserializing message.");
+    ROS_INFO("Message Contents[%s]", _data.c_str());
   }
 
   // Add code to handle communication callbacks.
@@ -136,13 +141,30 @@ void Controller::Update()
       this->originClient = this->n.serviceClient<subt_msgs::PoseFromArtifact>(
           "/subt/pose_from_artifact_origin");
       this->originSrv.request.robot_name.data = this->name;
-
     }
     else
       return;
   }
 
   // Add code that should be processed every iteration.
+
+  std::chrono::time_point<std::chrono::system_clock> now =
+    std::chrono::system_clock::now();
+
+  if (std::chrono::duration<double>(now - this->lastMsgSentTime).count() > 5.0)
+  {
+    // Here, we are assuming that the robot names are "X1" and "X2".
+    if (this->name == "X1")
+    {
+      this->client->SendTo("Hello from " + this->name, "X2");
+    }
+    else
+    {
+      this->client->SendTo("Hello from " + this->name, "X1");
+    }
+    this->lastMsgSentTime = now;
+  }
+
 
   if (this->arrived)
     return;
@@ -160,11 +182,7 @@ not available.");
       // Stop robot
       geometry_msgs::Twist msg;
       this->velPub.publish(msg);
-
-      // If out of range once, we consider it arrived
-      this->arrived = true;
     }
-
     return;
   }
 
@@ -270,27 +288,35 @@ int main(int argc, char** argv)
   ros::init(argc, argv, argv[1]);
 
   ROS_INFO("Starting seed competitor\n");
-
-  ros::master::V_TopicInfo masterTopics;
-  ros::master::getTopics(masterTopics);
-
-  // Get the name of the robot based on the name of the "cmd_vel" topic.
   std::string name;
 
-  while (name.empty())
+  // Get the name of the robot based on the name of the "cmd_vel" topic if
+  // the name was not passed in as an argument.
+  if (argc < 2 || std::strlen(argv[1]) == 0)
   {
-    for (ros::master::V_TopicInfo::iterator it = masterTopics.begin();
-        it != masterTopics.end(); ++it)
+    ros::master::V_TopicInfo masterTopics;
+    ros::master::getTopics(masterTopics);
+
+    while (name.empty())
     {
-      const ros::master::TopicInfo &info = *it;
-      if (info.name.find("cmd_vel") != std::string::npos)
+      for (ros::master::V_TopicInfo::iterator it = masterTopics.begin();
+          it != masterTopics.end(); ++it)
       {
-        int rpos = info.name.rfind("/");
-        name = info.name.substr(1, rpos - 1);
+        const ros::master::TopicInfo &info = *it;
+        if (info.name.find("cmd_vel") != std::string::npos)
+        {
+          int rpos = info.name.rfind("/");
+          name = info.name.substr(1, rpos - 1);
+        }
       }
+      if (name.empty())
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
-    if (name.empty())
-      std::this_thread::sleep_for(std::chrono::milliseconds(100));
+  }
+  // Otherwise use the name provided as an argument.
+  else
+  {
+    name = argv[1];
   }
 
   ROS_INFO("Using robot name[%s]\n", name.c_str());
