@@ -104,6 +104,7 @@ void Controller::CommClientCallback(const std::string &_srcAddress,
     ROS_INFO("Message Contents[%s]", _data.c_str());
   }
 
+  std::cerr << "Got message\n";
   // Add code to handle communication callbacks.
   ROS_INFO("Message from [%s] to [%s] on port [%u]:\n [%s]", _srcAddress.c_str(),
       _dstAddress.c_str(), _dstPort, res.DebugString().c_str());
@@ -135,8 +136,7 @@ void Controller::Update()
       this->client->Bind(&Controller::CommClientCallback, this);
 
       // Create a cmd_vel publisher to control a vehicle.
-      this->velPub = this->n.advertise<geometry_msgs::Twist>(
-          this->name + "/cmd_vel", 1);
+      this->velPub = this->n.advertise<geometry_msgs::Twist>("cmd_vel", 1);
 
       // Create a cmd_vel publisher to control a vehicle.
       this->originClient = this->n.serviceClient<subt_msgs::PoseFromArtifact>(
@@ -157,10 +157,12 @@ void Controller::Update()
     // Here, we are assuming that the robot names are "X1" and "X2".
     if (this->name == "X1")
     {
+      std::cerr << "X1 sending hello X2\n";
       this->client->SendTo("Hello from " + this->name, "X2");
     }
     else
     {
+      std::cerr << "X2 sending hello to X1\n";
       this->client->SendTo("Hello from " + this->name, "X1");
     }
     this->lastMsgSentTime = now;

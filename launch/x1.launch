@@ -4,5 +4,7 @@
   <arg name="robot_name" default="" />
 
   <!-- Launch your controller nodes -->
-  <node name="$(arg robot_name)subt_solution" pkg="subt_seed" type="subt_seed_node" output="screen" args="$(arg robot_name)"/>
+  <group ns="$(arg robot_name)">
+    <node name="$(arg robot_name)subt_solution" pkg="subt_seed" type="subt_seed_node" output="screen" args="$(arg robot_name)"/>
+  </group>
 </launch>
