@@ -293,16 +293,16 @@ int main(int argc, char** argv)
   // the name was not passed in as an argument.
   if (argc < 2 || std::strlen(argv[1]) == 0)
   {
-    ros::master::V_TopicInfo masterTopics;
-    ros::master::getTopics(masterTopics);
-
     while (name.empty())
     {
+      ros::master::V_TopicInfo masterTopics;
+      ros::master::getTopics(masterTopics);
+
       for (ros::master::V_TopicInfo::iterator it = masterTopics.begin();
           it != masterTopics.end(); ++it)
       {
         const ros::master::TopicInfo &info = *it;
-        if (info.name.find("cmd_vel") != std::string::npos)
+        if (info.name.find("battery_state") != std::string::npos)
         {
           int rpos = info.name.rfind("/");
           name = info.name.substr(1, rpos - 1);
