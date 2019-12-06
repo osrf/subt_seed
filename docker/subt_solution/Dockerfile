@@ -70,7 +70,7 @@ RUN /bin/sh -c 'echo "deb [trusted=yes] http://packages.osrfoundation.org/gazebo
 RUN apt-get update -qq \
 &&  apt-get install -y -qq \
     ignition-blueprint \
-    ros-melodic-ros1-ign \
+    ros-melodic-ros-ign \
  && apt-get clean -qq
 
 # Add a user with the same user_id as the user outside the container
