@@ -15,14 +15,12 @@
  *
 */
 #include <chrono>
-#include <mutex>
-
 #include <geometry_msgs/Twist.h>
 #include <subt_msgs/PoseFromArtifact.h>
 #include <ros/ros.h>
 #include <std_srvs/SetBool.h>
 #include <rosgraph_msgs/Clock.h>
-#include <topic_tools/shape_shifter.h>
+
 #include <string>
 
 #include <subt_communication_broker/subt_communication_client.h>
@@ -40,7 +38,7 @@ class Controller
 
   /// \brief A function that will be called every loop of the ros spin
   /// cycle.
-  public: void Update(const ros::TimerEvent &);
+  public: void Update();
 
   /// \brief Callback function for message from other comm clients.
   /// \param[in] _srcAddress The address of the robot who sent the packet.
@@ -52,20 +50,11 @@ class Controller
                                    const uint32_t _dstPort,
                                    const std::string &_data);
 
-  /// \brief Callback for all sensor messages.
-  /// \param[in] _msg The message.
-  /// \param[in] _topic The name of the topic.
-  private: void OnSensorMsg(const topic_tools::ShapeShifter::ConstPtr &_msg,
-                            const std::string &_topic);
-
   /// \brief ROS node handler.
   private: ros::NodeHandle n;
 
   /// \brief publisher to send cmd_vel
   private: ros::Publisher velPub;
-
-  /// \brief Publisher to the /robot_data topic.
-  private: ros::Publisher robotDataPub;
 
   /// \brief Communication client.
   private: std::unique_ptr<subt::CommsClient> client;
@@ -87,15 +76,6 @@ class Controller
 
   /// \brief Name of this robot.
   private: std::string name;
-
-  /// \brief Timer that trigger the update function.
-  private: ros::Timer updateTimer;
-
-  /// \brief All of the subscribers.
-  private: std::vector<ros::Subscriber> subscribers;
-
-  /// \brief Just a mutex.
-  private: std::mutex mutex;
 };
 
 /////////////////////////////////////////////////
@@ -110,59 +90,6 @@ Controller::Controller(const std::string &_name)
   ros::service::waitForService("/subt/pose_from_artifact_origin", -1);
   this->name = _name;
   ROS_INFO("Using robot name[%s]\n", this->name.c_str());
-
-  // Advetise the /robot_data topic. Data on this topic will be bagged by
-  // cloudsim.
-  this->robotDataPub = this->n.advertise<std_msgs::String>("/robot_data", 1);
-
-  ros::master::V_TopicInfo masterTopics;
-  ros::master::getTopics(masterTopics);
-
-  // Subscribe to some of the sensor messages.
-  for (ros::master::V_TopicInfo::iterator it = masterTopics.begin();
-      it != masterTopics.end(); ++it)
-  {
-    const ros::master::TopicInfo &info = *it;
-
-    //if (info.name.find("front_scan") != std::string::npos ||
-    //    info.name.find("points") != std::string::npos ||
-    //    info.name.find("image_raw") != std::string::npos ||
-    //    info.name.find("depth") != std::string::npos ||
-    //    info.name.find("imu") != std::string::npos ||
-    //    info.name.find("magnetic_field") != std::string::npos ||
-    //    info.name.find("air_pressure") != std::string::npos ||
-    //    info.name.find("battery_state") != std::string::npos)
-    if (info.name.find("imu") != std::string::npos)
-    {
-      boost::function<
-        void(const topic_tools::ShapeShifter::ConstPtr&)> callback;
-      callback = [this, info](
-          const topic_tools::ShapeShifter::ConstPtr &_msg) -> void
-        {
-          this->OnSensorMsg(_msg, info.name);
-        };
-
-      this->subscribers.push_back(
-          this->n.subscribe(info.name, 1000, callback));
-    }
-  }
-
-  this->updateTimer = this->n.createTimer(ros::Duration(0.5),
-      &Controller::Update, this);
-}
-
-/////////////////////////////////////////////////
-void Controller::OnSensorMsg(const topic_tools::ShapeShifter::ConstPtr &,
-                             const std::string &_topic)
-{
-  std::lock_guard<std::mutex> lock(this->mutex);
-  std_msgs::String msg;
-  std::ostringstream stream;
-  ros::Time currentTime = ros::Time::now();
-
-  stream << currentTime.sec + currentTime.nsec*1e-9 << ": " << _topic;
-  msg.data = stream.str().c_str();
-  this->robotDataPub.publish(msg);
 }
 
 /////////////////////////////////////////////////
@@ -183,7 +110,7 @@ void Controller::CommClientCallback(const std::string &_srcAddress,
 }
 
 /////////////////////////////////////////////////
-void Controller::Update(const ros::TimerEvent &)
+void Controller::Update()
 {
   if (!this->started)
   {
@@ -394,10 +321,16 @@ int main(int argc, char** argv)
   // Create the controller
   Controller controller(name);
 
-  // Spin asynchronously.
-  ros::AsyncSpinner spinner(4);
-  spinner.start();
-  ros::waitForShutdown();
+  // This sample code iteratively calls Controller::Update. This is just an
+  // example. You can write your controller using alternative methods.
+  // To get started with ROS visit: http://wiki.ros.org/ROS/Tutorials
+  ros::Rate loop_rate(10);
+  while (ros::ok())
+  {
+    controller.Update();
+    ros::spinOnce();
+    loop_rate.sleep();
+  }
 
   return 0;
 }

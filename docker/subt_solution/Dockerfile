@@ -54,7 +54,6 @@ RUN /bin/sh -c 'echo "deb [trusted=yes] http://packages.ros.org/ros/ubuntu $(lsb
     ros-melodic-twist-mux \
     ros-melodic-rviz-imu-plugin \
     ros-melodic-rotors-control \
-    ros-melodic-ros-type-introspection \
  && rosdep init \
  && apt-get clean -qq
 
@@ -70,7 +69,7 @@ RUN /bin/sh -c 'echo "deb [trusted=yes] http://packages.osrfoundation.org/gazebo
 RUN apt-get update -qq \
 &&  apt-get install -y -qq \
     ignition-blueprint \
-    ros-melodic-ros-ign \
+    ros-melodic-ros1-ign \
  && apt-get clean -qq
 
 # Add a user with the same user_id as the user outside the container
@@ -95,8 +94,8 @@ RUN rosdep update
 
 RUN mkdir -p subt_solution/src \
  && cd subt_solution/src \
- && hg clone https://bitbucket.org/osrf/subt -b urban_circuit \
- && hg clone https://bitbucket.org/osrf/subt_seed -b log_sensor_msgs_imu
+ && hg clone https://bitbucket.org/osrf/subt -b tunnel_circuit \
+ && hg clone https://bitbucket.org/osrf/subt_seed
 
 WORKDIR /home/$USERNAME/subt_solution
 
