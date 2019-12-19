@@ -124,15 +124,15 @@ Controller::Controller(const std::string &_name)
   {
     const ros::master::TopicInfo &info = *it;
 
-    //if (info.name.find("front_scan") != std::string::npos ||
-    //    info.name.find("points") != std::string::npos ||
-    //    info.name.find("image_raw") != std::string::npos ||
-    //    info.name.find("depth") != std::string::npos ||
-    //    info.name.find("imu") != std::string::npos ||
-    //    info.name.find("magnetic_field") != std::string::npos ||
-    //    info.name.find("air_pressure") != std::string::npos ||
-    //    info.name.find("battery_state") != std::string::npos)
-    if (info.name.find("imu") != std::string::npos)
+    if (info.name.find("front_scan") != std::string::npos ||
+        info.name.find("points") != std::string::npos ||
+        info.name.find("image_raw") != std::string::npos ||
+        info.name.find("depth") != std::string::npos ||
+        info.name.find("imu") != std::string::npos ||
+        info.name.find("magnetic_field") != std::string::npos ||
+        info.name.find("air_pressure") != std::string::npos ||
+        info.name.find("battery_state") != std::string::npos ||
+        info.name.find("imu") != std::string::npos)
     {
       boost::function<
         void(const topic_tools::ShapeShifter::ConstPtr&)> callback;

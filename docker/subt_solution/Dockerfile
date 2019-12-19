@@ -70,7 +70,7 @@ RUN /bin/sh -c 'echo "deb [trusted=yes] http://packages.osrfoundation.org/gazebo
 RUN apt-get update -qq \
 &&  apt-get install -y -qq \
     ignition-blueprint \
-    ros-melodic-ros1-ign \
+    ros-melodic-ros-ign \
  && apt-get clean -qq
 
 # Add a user with the same user_id as the user outside the container
@@ -96,7 +96,7 @@ RUN rosdep update
 RUN mkdir -p subt_solution/src \
  && cd subt_solution/src \
  && hg clone https://bitbucket.org/osrf/subt -b urban_circuit \
- && hg clone https://bitbucket.org/osrf/subt_seed -b log_sensor_msgs_imu
+ && hg clone https://bitbucket.org/osrf/subt_seed -b log_sensor_msgs
 
 WORKDIR /home/$USERNAME/subt_solution
 
