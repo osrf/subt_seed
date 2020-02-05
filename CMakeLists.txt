@@ -16,13 +16,12 @@ find_package(catkin REQUIRED
     message_generation
     subt_ign
     roscpp
-    topic_tools
 )
 
 ### find_package(gazebo REQUIRED)
 
 catkin_package(
-  CATKIN_DEPENDS message_runtime topic_tools
+  CATKIN_DEPENDS message_runtime
 )
 
 ########################
