@@ -140,7 +140,7 @@ void Controller::Update()
 
       // Create a cmd_vel publisher to control a vehicle.
       this->originClient = this->n.serviceClient<subt_msgs::PoseFromArtifact>(
-          "/subt/pose_from_artifact_origin");
+          "/subt/pose_from_artifact_origin", true);
       this->originSrv.request.robot_name.data = this->name;
     }
     else
@@ -231,9 +231,11 @@ not available.");
     double cosy_cosp = +1.0 - 2.0 * (q.y * q.y + q.z * q.z);
     auto yaw = atan2(siny_cosp, cosy_cosp);
 
+    auto yaw90 = M_PI * 0.5;
+
     auto facingFront = abs(yaw) < 0.1;
-    auto facingEast = abs(yaw + M_PI * 0.5) < 0.1;
-    auto facingWest = abs(yaw - M_PI * 0.5) < 0.1;
+    auto facingEast = abs(yaw + yaw90) < 0.1;
+    auto facingWest = abs(yaw - yaw90) < 0.1;
 
     auto onCenter = abs(pose.position.y) <= 1.0;
     auto westOfCenter = pose.position.y > 1.0;
@@ -248,28 +250,27 @@ not available.");
       msg.linear.x = linVel;
       msg.angular.z = angVel * -yaw;
     }
-    // Turn to center line
-    else if (!facingEast && westOfCenter)
+    // Center line, not facing entrance
+    else if (!facingFront && onCenter)
     {
-      msg.angular.z = -angVel;
-    }
-    else if (!facingWest && eastOfCenter)
-    {
-      msg.angular.z = angVel;
+      msg.angular.z = angVel * -yaw;
     }
     // Go to center line
     else if (facingEast && westOfCenter)
     {
-      msg.linear.x = linVel;
+      msg.linear.x = linVel * std::min(pose.position.y, 1.0);
     }
     else if (facingWest && eastOfCenter)
     {
-      msg.linear.x = linVel;
+      msg.linear.x = linVel * std::min(-pose.position.y, 1.0);
     }
-    // Center line, not facing entrance
-    else if (onCenter && !facingFront)
+    else if (westOfCenter)
     {
-      msg.angular.z = angVel * -yaw;
+      msg.angular.z = angVel * (-yaw90 - yaw);
+    }
+    else if (eastOfCenter)
+    {
+      msg.angular.z = angVel * (yaw90 - yaw);
     }
     else
     {
