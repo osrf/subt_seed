@@ -15,7 +15,6 @@ RUN apt-get update -qq \
         libspnav-dev \
         libusb-dev \
         lsb-release \
-        mercurial \
         python3-dbg \
         python3-empy \
         python3-numpy \
@@ -44,6 +43,7 @@ RUN /bin/sh -c 'echo "deb [trusted=yes] http://packages.ros.org/ros/ubuntu $(lsb
  && apt-get update -qq \
  && apt-get install -y -qq \
     python-catkin-tools \
+    python-rosdep \
     python-rosinstall \
     ros-melodic-desktop \
     ros-melodic-joystick-drivers \
@@ -94,8 +94,8 @@ RUN rosdep update
 
 RUN mkdir -p subt_solution/src \
  && cd subt_solution/src \
- && hg clone https://bitbucket.org/osrf/subt -b urban_circuit \
- && hg clone https://bitbucket.org/osrf/subt_seed
+ && git clone https://github.com/osrf/subt.git -b urban_circuit \
+ && git clone https://github.com/osrf/subt_seed.git
 
 WORKDIR /home/$USERNAME/subt_solution
 
