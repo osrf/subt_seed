@@ -163,46 +163,7 @@ void Controller::Update()
     {
       this->client->SendTo("Hello from " + this->name, "X1");
     }
-    this->lastMsgSentTime = now;
-  }
 
-
-  if (this->arrived)
-    return;
-
-  bool call = this->originClient.call(this->originSrv);
-  // Query current robot position w.r.t. entrance
-  if (!call || !this->originSrv.response.success)
-  {
-    ROS_ERROR("Failed to call pose_from_artifact_origin service, \
-robot may not exist, be outside staging area, or the service is \
-not available.");
-
-    // Stop robot
-    geometry_msgs::Twist msg;
-    this->velPub.publish(msg);
-    return;
-  }
-
-  auto pose = this->originSrv.response.pose.pose;
-
-  // Simple example for robot to go to entrance
-  geometry_msgs::Twist msg;
-
-  // Distance to goal
-  double dist = pose.position.x * pose.position.x +
-    pose.position.y * pose.position.y;
-
-  // Arrived
-  if (dist < 0.3 || pose.position.x >= -0.3)
-  {
-    msg.linear.x = 0;
-    msg.angular.z = 0;
-    this->arrived = true;
-    ROS_INFO("Arrived at entrance!");
-
-    // Report an artifact
-    // Hardcoded to tunnel_circuit_practice_01's exginguisher_3
     subt::msgs::Artifact artifact;
     artifact.set_type(static_cast<uint32_t>(subt::ArtifactType::TYPE_EXTINGUISHER));
     artifact.mutable_pose()->mutable_position()->set_x(-8.1);
@@ -219,9 +180,53 @@ not available.");
     {
       ROS_ERROR("CommsClient failed to Send serialized data.");
     }
+
+    this->lastMsgSentTime = now;
+  }
+
+
+  /*if (this->arrived)
+    return;
+    */
+
+  /*bool call = this->originClient.call(this->originSrv);
+  // Query current robot position w.r.t. entrance
+  if (!call || !this->originSrv.response.success)
+  {
+    ROS_ERROR("Failed to call pose_from_artifact_origin service, \
+robot may not exist, be outside staging area, or the service is \
+not available.");
+
+    // Stop robot
+    geometry_msgs::Twist msg;
+    this->velPub.publish(msg);
+    return;
+  }*/
+
+  auto pose = this->originSrv.response.pose.pose;
+
+  // Simple example for robot to go to entrance
+  geometry_msgs::Twist msg;
+
+  // Distance to goal
+  double dist = pose.position.x * pose.position.x +
+    pose.position.y * pose.position.y;
+
+  // Arrived
+  //if (dist < 0.3 || pose.position.x >= -0.3)
+  //if (this->name == "X1")
+  {
+    /*msg.linear.x = 0;
+    msg.angular.z = 0;
+    this->arrived = true;
+    ROS_INFO("Arrived at entrance!");
+    */
+
+    // Report an artifact
+    // Hardcoded to tunnel_circuit_practice_01's exginguisher_3
   }
   // Move towards entrance
-  else
+  /*else
   {
     // Yaw w.r.t. entrance
     // Quaternion to yaw:
@@ -275,9 +280,9 @@ not available.");
     {
       ROS_ERROR("Unhandled case");
     }
-  }
+  }*/
 
-  this->velPub.publish(msg);
+  // this->velPub.publish(msg);
 }
 
 /////////////////////////////////////////////////
