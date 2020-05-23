@@ -50,6 +50,8 @@ class Controller
                                    const uint32_t _dstPort,
                                    const std::string &_data);
 
+  private: void SendScore();
+
   /// \brief ROS node handler.
   private: ros::NodeHandle n;
 
@@ -76,6 +78,7 @@ class Controller
 
   /// \brief Name of this robot.
   private: std::string name;
+  private: ros::Subscriber scoreSub;
 };
 
 /////////////////////////////////////////////////
@@ -90,6 +93,17 @@ Controller::Controller(const std::string &_name)
   ros::service::waitForService("/subt/pose_from_artifact_origin", -1);
   this->name = _name;
   ROS_INFO("Using robot name[%s]\n", this->name.c_str());
+
+  boost::function<
+    void(const std_msgs::String::ConstPtr &msg)> callback;
+  callback = [this](
+      const std_msgs::String::ConstPtr &_msg) -> void
+  {
+    this->SendScore();
+  };
+
+  this->scoreSub = this->n.subscribe(this->name + "/testscore", 1000, callback);
+
 }
 
 /////////////////////////////////////////////////
@@ -152,7 +166,7 @@ void Controller::Update()
   std::chrono::time_point<std::chrono::system_clock> now =
     std::chrono::system_clock::now();
 
-  if (std::chrono::duration<double>(now - this->lastMsgSentTime).count() > 5.0)
+  /*if (std::chrono::duration<double>(now - this->lastMsgSentTime).count() > 5.0)
   {
     // Here, we are assuming that the robot names are "X1" and "X2".
     if (this->name == "X1")
@@ -182,7 +196,7 @@ void Controller::Update()
     }
 
     this->lastMsgSentTime = now;
-  }
+  }*/
 
 
   /*if (this->arrived)
@@ -283,6 +297,26 @@ not available.");
   }*/
 
   // this->velPub.publish(msg);
+}
+
+void Controller::SendScore()
+{
+    subt::msgs::Artifact artifact;
+    artifact.set_type(static_cast<uint32_t>(subt::ArtifactType::TYPE_EXTINGUISHER));
+    artifact.mutable_pose()->mutable_position()->set_x(-8.1);
+    artifact.mutable_pose()->mutable_position()->set_y(37);
+    artifact.mutable_pose()->mutable_position()->set_z(0.004);
+
+    std::string serializedData;
+    if (!artifact.SerializeToString(&serializedData))
+    {
+      ROS_ERROR("ReportArtifact(): Error serializing message [%s]",
+          artifact.DebugString().c_str());
+    }
+    else if (!this->client->SendTo(serializedData, subt::kBaseStationName))
+    {
+      ROS_ERROR("CommsClient failed to Send serialized data.");
+    }
 }
 
 /////////////////////////////////////////////////
