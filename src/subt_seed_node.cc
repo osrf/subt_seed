@@ -166,7 +166,7 @@ void Controller::Update()
   std::chrono::time_point<std::chrono::system_clock> now =
     std::chrono::system_clock::now();
 
-  /*if (std::chrono::duration<double>(now - this->lastMsgSentTime).count() > 5.0)
+  //if (std::chrono::duration<double>(now - this->lastMsgSentTime).count() > 1.0)
   {
     // Here, we are assuming that the robot names are "X1" and "X2".
     if (this->name == "X1")
@@ -196,7 +196,7 @@ void Controller::Update()
     }
 
     this->lastMsgSentTime = now;
-  }*/
+  }
 
 
   /*if (this->arrived)
