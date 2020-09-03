@@ -2,7 +2,11 @@
 <launch>
   <!-- Arguments -->
   <arg name="robot_name" default="" />
+  <arg name="delay_finish" default="600"/>
 
   <!-- Launch your controller nodes -->
   <node name="$(arg robot_name)subt_solution" pkg="subt_seed" type="subt_seed_node" output="screen" args="$(arg robot_name)"/>
+
+  <node pkg="rosservice" type="rosservice" name="start" args="call --wait /subt/start true"/>
+  <node pkg="rosservice" type="rosservice" name="finish" args="call --wait /subt/finish true" launch-prefix="bash -c 'sleep $(arg delay_finish); $0 $@'"/>
 </launch>
