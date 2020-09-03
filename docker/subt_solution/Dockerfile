@@ -15,7 +15,6 @@ RUN apt-get update -qq \
         libspnav-dev \
         libusb-dev \
         lsb-release \
-        mercurial \
         python3-dbg \
         python3-empy \
         python3-numpy \
@@ -39,6 +38,14 @@ RUN export DEBIAN_FRONTEND=noninteractive \
  && dpkg-reconfigure --frontend noninteractive tzdata \
  && apt-get clean -qq
 
+# sdformat8-sdf conflicts with sdformat-sdf installed from gazebo
+# so we need to workaround this using a force overwrite
+# Do this before installing ign-gazebo
+RUN /bin/sh -c 'echo "deb [trusted=yes] http://packages.osrfoundation.org/gazebo/ubuntu-stable `lsb_release -cs` main" > /etc/apt/sources.list.d/gazebo-stable.list' \
+ && /bin/sh -c 'echo "deb http://packages.osrfoundation.org/gazebo/ubuntu-prerelease `lsb_release -cs` main" > /etc/apt/sources.list.d/gazebo-prerelease.list' \
+ && /bin/sh -c 'wget http://packages.osrfoundation.org/gazebo.key -O - | apt-key add -' \
+ && /bin/sh -c 'apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-key C1CF6E31E6BADE8868B172B4F42ED6FBAB17C654'
+ 
 # install ROS and required packages
 RUN /bin/sh -c 'echo "deb [trusted=yes] http://packages.ros.org/ros/ubuntu $(lsb_release -sc) main" > /etc/apt/sources.list.d/ros-latest.list' \
  && apt-get update -qq \
@@ -54,16 +61,7 @@ RUN /bin/sh -c 'echo "deb [trusted=yes] http://packages.ros.org/ros/ubuntu $(lsb
     ros-melodic-twist-mux \
     ros-melodic-rviz-imu-plugin \
     ros-melodic-rotors-control \
- && rosdep init \
  && apt-get clean -qq
-
-# sdformat8-sdf conflicts with sdformat-sdf installed from gazebo
-# so we need to workaround this using a force overwrite
-# Do this before installing ign-gazebo
-RUN /bin/sh -c 'echo "deb [trusted=yes] http://packages.osrfoundation.org/gazebo/ubuntu-stable `lsb_release -cs` main" > /etc/apt/sources.list.d/gazebo-stable.list' \
- && /bin/sh -c 'echo "deb http://packages.osrfoundation.org/gazebo/ubuntu-prerelease `lsb_release -cs` main" > /etc/apt/sources.list.d/gazebo-prerelease.list' \
- && /bin/sh -c 'wget http://packages.osrfoundation.org/gazebo.key -O - | apt-key add -' \
- && /bin/sh -c 'apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-key C1CF6E31E6BADE8868B172B4F42ED6FBAB17C654'
 
 # install ign-blueprint
 RUN apt-get update -qq \
@@ -71,6 +69,8 @@ RUN apt-get update -qq \
     ignition-blueprint \
     ros-melodic-ros-ign \
  && apt-get clean -qq
+
+RUN apt install python-pip -y && pip install rosdep && rosdep init && rosdep update
 
 # Add a user with the same user_id as the user outside the container
 # Requires a docker build argument `user_id`
@@ -90,12 +90,10 @@ RUN mkdir ~/workspaces ~/other
 # When running a container start in the developer's home folder
 WORKDIR /home/$USERNAME
 
-RUN rosdep update
-
 RUN mkdir -p subt_solution/src \
  && cd subt_solution/src \
- && hg clone https://bitbucket.org/osrf/subt -b urban_circuit \
- && hg clone https://bitbucket.org/osrf/subt_seed
+ && git clone https://github.com/osrf/subt.git \
+ && git clone https://github.com/osrf/subt_seed.git
 
 WORKDIR /home/$USERNAME/subt_solution
 
